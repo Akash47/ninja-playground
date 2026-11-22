@@ -1,0 +1,7 @@
+{
+  "title": "Secret Diary",
+  "tagline": "A diary that needs you to sign in. (Shows how locked projects work.)",
+  "emoji": "📔",
+  "tags": ["demo"],
+  "auth": true
+}

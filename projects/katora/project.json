@@ -1,0 +1,10 @@
+{
+  "title": "Katora",
+  "tagline": "Two cards, one bold bid. Will the next card land between them? A table game for friends, with video and chat.",
+  "emoji": "🥣",
+  "icon": "icon-192.png",
+  "tags": ["card game", "multiplayer", "video chat", "free"],
+  "auth": false,
+  "static": true,
+  "files": ["index.html", "game.js", "roomcore.js", "p2p.js", "sw.js", "manifest.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png"]
+}

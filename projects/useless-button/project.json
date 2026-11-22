@@ -1,0 +1,9 @@
+{
+  "title": "The Useless Button",
+  "tagline": "Press it. Nothing happens. That is the whole idea.",
+  "emoji": "🔘",
+  "tags": ["toy"],
+  "auth": false,
+  "static": true,
+  "files": ["index.html"]
+}

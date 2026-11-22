@@ -1,0 +1,546 @@
+<!doctype html>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name=theme-color content="#8c1d3c">
+<meta name=mobile-web-app-capable content=yes>
+<meta name=apple-mobile-web-app-capable content=yes>
+<meta name=apple-mobile-web-app-title content=Katora>
+<meta name=apple-mobile-web-app-status-bar-style content=black-translucent>
+<link rel=manifest href=manifest.json>
+<link rel=icon type=image/png href=icon-192.png>
+<link rel=apple-touch-icon href=apple-touch-icon.png>
+<title>Katora</title>
+<style>
+:root{--bg:#1c0612;--fg:#fdf3dc;--gold:#f6b93b;--saffron:#ff9933;--maroon:#8c1d3c;--good:#5fd38a;--bad:#ff6b6b;--chrome:400px}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;color:var(--fg);min-height:100vh;
+  background:radial-gradient(#ffd16612 1.5px,transparent 2px) 0 0/26px 26px,radial-gradient(circle at 50% 0,#4a1230,var(--bg) 65%) fixed}
+html{overscroll-behavior:none}
+body{-webkit-tap-highlight-color:transparent;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)} /* app feel: no pull-to-refresh, respect the notch */
+button,input{touch-action:manipulation}button{-webkit-user-select:none;user-select:none}
+.homelink{color:var(--fg);opacity:.7;font-size:.8rem;text-decoration:none}.homelink:hover{opacity:1}
+main{max-width:900px;margin:0 auto;padding:0 12px 14px}
+.toran{height:18px;margin:0 -12px;background:radial-gradient(circle at 9px 6px,#ff9933 6px,transparent 7px) 0 0/24px 18px repeat-x,radial-gradient(circle at 21px 12px,#f6c445 6px,transparent 7px) 0 0/24px 18px repeat-x}
+header{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+h1{margin:0;font-size:1.35rem;letter-spacing:.3px}h1 small{opacity:.8;font-weight:400;margin-left:6px}
+button{font:inherit;border:0;border-radius:10px;padding:8px 14px;background:var(--gold);color:#3a1600;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #a8641a}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #a8641a}
+button.alt{background:#ffffff14;color:var(--fg);box-shadow:none;border:1px solid #ffd16644}
+button.big{font-size:1.05rem;padding:10px 24px}button.sm{padding:3px 10px;font-size:.85rem}
+button:disabled{opacity:.4;cursor:default}
+input{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid #ffd16655;background:#0007;color:var(--fg)}
+input[type=range]{padding:0;accent-color:var(--gold)}
+.panel{background:#ffffff0d;border:1px solid #ffd16630;border-radius:16px;padding:16px;margin:12px 0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.fan{display:flex;justify-content:center;margin:14px 0 6px}.fan .card{margin:0 -8px}
+.fan .card:nth-child(1){transform:rotate(-12deg)}.fan .card:nth-child(3){transform:rotate(12deg)}
+.hero{text-align:center}.hero h2{margin:8px 0 2px;font-size:1.4rem;color:var(--gold)}.hero p{opacity:.85;margin:2px 0}
+details{opacity:.92}summary{cursor:pointer}
+.small{font-size:.85rem;opacity:.85}
+
+/* dealer */
+.dealerrow{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0;min-height:62px}
+.dealerav{font-size:2.3rem;line-height:1}
+.bubble{position:relative;background:#fff3d0;color:#2b1a0a;border-radius:14px;padding:6px 12px;max-width:460px;font-size:.92rem;line-height:1.3}
+.bubble::before{content:"";position:absolute;left:-8px;top:14px;border:8px solid transparent;border-left:0;border-right-color:#fff3d0}
+.bubble div+div{margin-top:2px;font-weight:700}
+.deck{position:relative;width:40px;height:56px;flex:none}.deck .card{position:absolute}
+.lock{animation:unlock .3s var(--d,.95s) backwards} /* controls stay hidden until the card has turned over */
+@keyframes unlock{from{opacity:0;pointer-events:none}to{opacity:1;pointer-events:auto}}
+
+/* table: sized from the window height so the whole game fits on one screen */
+.wrap{padding:34px 60px 40px}
+.felt{container-type:inline-size;position:relative;width:min(100%,calc((100dvh - var(--chrome) - env(safe-area-inset-top) - env(safe-area-inset-bottom))*1.6));margin:0 auto;aspect-ratio:16/10;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,#ffd16612 0 7.5deg,transparent 7.5deg 15deg),
+    radial-gradient(ellipse at 50% 50%,transparent 0 38%,#ffd16633 38.4% 39.4%,transparent 39.8% 60%,#ffd16633 60.4% 61.4%,transparent 61.8%),
+    radial-gradient(ellipse at 50% 40%,#9a2145,#4d0b21);
+  border:5px solid #e0a82e;box-shadow:0 0 0 9px #5c0f26,0 0 0 12px #e0a82e,inset 0 0 50px #000a,0 20px 44px #000b}
+.felt::before{content:"";position:absolute;inset:-34px;border-radius:50%;z-index:-1;background:repeating-conic-gradient(#ff9933 0 5deg,#f6c445 5deg 10deg,#e4572e 10deg 15deg)}
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:16px}
+.bowl{position:relative;width:100px;height:92px;text-align:center}
+.kat{display:inline-block;line-height:0;vertical-align:middle}
+.bowl .kat{position:absolute;left:0;bottom:14px;filter:drop-shadow(0 4px 5px #0009)}
+.pile{position:absolute;left:0;right:0;top:0;height:44px}
+.chip{position:absolute;width:17px;height:17px;border-radius:50%;border:3px dashed #ffffffaa;background:var(--c);box-shadow:0 1px 2px #0008}
+.pot{position:absolute;left:0;right:0;bottom:0;font-weight:800;color:var(--gold);text-shadow:0 1px 3px #000;white-space:nowrap}
+.draw{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.7rem}
+.slot{width:54px;height:76px;border:2px dashed #ffffff44;border-radius:8px;display:grid;place-items:center;font-size:1.4rem;opacity:.5}
+.seat{position:absolute;transform:translate(-50%,-50%);width:clamp(78px,14cqw,116px);text-align:center;background:#2a0a14e6;border:2px solid #e0a82e55;border-radius:14px;padding:5px 6px 7px;transition:border-color .3s}
+.seat.turn{border-color:var(--saffron);box-shadow:0 0 0 3px #ff993355,0 0 22px #ff9933aa;animation:pulse 1.4s infinite}
+.seat.win{border-color:var(--good);box-shadow:0 0 18px #5fd38a88}.seat.lose{border-color:var(--bad);box-shadow:0 0 18px #ff6b6b66}
+@keyframes pulse{50%{box-shadow:0 0 0 5px #ff993333,0 0 30px #ff9933dd}}
+.seat .av{font-size:1.4rem;line-height:1}.seat .nm{font-weight:700;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .ch{font-size:.8rem;opacity:.95}.seat .crown{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:1.4rem}
+.hand{display:flex;gap:4px;justify-content:center;margin-top:3px;min-height:calc(clamp(28px,4.6cqw,36px)*1.4)}
+.seat .card{--w:clamp(28px,4.6cqw,36px)!important} /* seats and cards scale with the table */
+.float{position:absolute;left:50%;top:-6px;font-weight:900;font-size:1.5rem;pointer-events:none;text-shadow:0 2px 4px #000;z-index:9}
+.chipfly{position:fixed;width:18px;height:18px;border-radius:50%;border:3px dashed #ffffffcc;background:var(--c);z-index:50;pointer-events:none}
+.confetti{position:fixed;pointer-events:none;z-index:60;font-size:18px}
+.felt.shake{animation:shake .45s}@keyframes shake{20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+
+/* video faces */
+.seat.cam{width:clamp(100px,17cqw,150px)} /* a seat with a camera grows so the picture fills it */
+.seat video{display:block;margin:0 auto 3px;width:100%;aspect-ratio:3/2;border-radius:10px;object-fit:cover;border:2px solid var(--gold);background:#000;cursor:zoom-in}
+.seat video.me{transform:scaleX(-1)}
+.dense .seat.cam{width:clamp(84px,13cqw,106px)}
+@media(max-width:620px){.seat.cam{width:108px}.dense .seat.cam{width:92px}}
+/* big view: everyone's camera large */
+.wall{position:fixed;inset:0;background:#000e;z-index:100;display:flex;flex-direction:column;padding:12px;overflow:auto}
+.wall .close{align-self:flex-end}
+.wall .grid{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px;align-content:center;margin-top:8px}
+.wall .tile{position:relative}
+.wall video{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;border:3px solid var(--gold);background:#000;display:block}
+.wall .tile.me video{transform:scaleX(-1)}
+.wall .name{position:absolute;left:10px;bottom:10px;background:#000b;padding:2px 10px;border-radius:8px;font-size:.9rem}
+/* chat: live only. A message box, and speech bubbles that fade; no log */
+.compose{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:min(94vw,480px);display:flex;gap:6px;background:#1c0612f2;border:1px solid #ffd16655;border-radius:14px;padding:8px;z-index:90}
+.compose input{flex:1;min-width:0}
+.say{position:fixed;background:#fff3d0;color:#2b1a0a;padding:6px 12px;border-radius:14px;max-width:240px;font-size:.9rem;line-height:1.3;z-index:80;pointer-events:none;box-shadow:0 3px 10px #000a;word-break:break-word;animation:pop .2s}
+@keyframes pop{from{opacity:0;scale:.8}to{opacity:1;scale:1}}
+
+/* cards */
+.card{--w:38px;width:var(--w);height:calc(var(--w)*1.4);perspective:700px;position:relative;display:inline-block;font-size:calc(var(--w)*.4)}
+.card .in{position:absolute;inset:0;transform-style:preserve-3d}
+.card .f,.card .b{position:absolute;inset:0;border-radius:calc(var(--w)*.14);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card .f{background:#fffdf6;color:#222;box-shadow:0 2px 6px #0007;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;line-height:1.05}
+.card .f.red{color:#d63a3a}
+.card .b{transform:rotateY(180deg);background:repeating-linear-gradient(45deg,#8b1538 0 4px,#d4a017 4px 5px,#8b1538 5px 9px);border:2px solid #f6e3a1}
+
+/* controls: compact so the page does not scroll */
+.controls{padding:8px 12px;margin:4px 0 0}
+.crow{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:3px 0}
+.bidnum{font-size:1.7rem;min-width:2.3ch;text-align:right;color:var(--gold);font-weight:800}
+.crow input[type=range]{flex:1;min-width:130px;max-width:360px}
+.react{display:flex;gap:4px}.react button{font-size:1.05rem;padding:1px 7px;box-shadow:none}
+@media(min-width:900px){:root{--chrome:335px}.controls{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 14px}.controls .crow{display:contents}} /* wide screens: controls in one row */
+@media(max-width:620px){:root{--chrome:395px}.wrap{padding:30px 46px 36px}.felt{aspect-ratio:3/4;width:min(100%,calc((100dvh - var(--chrome) - env(safe-area-inset-top) - env(safe-area-inset-bottom))*.75))}.seat{width:92px;padding:4px 3px 5px}.card{--w:32px}.bowl{transform:scale(.85)}.center{flex-direction:column;gap:0}.slot{width:44px;height:62px}
+.dense .seat{width:78px;padding:3px 2px 4px}.dense .nm{font-size:.72rem}.dense .ch{font-size:.7rem}.dense .av{font-size:1.1rem}.dense .hand{min-height:36px;gap:2px}.dense .seat .card{--w:25px!important}.hand{min-height:46px}}
+</style>
+<main>
+<div class=toran></div>
+<header><div><h1><span id=logo></span> Katora</h1><a class=homelink id=home>← Ninja Playground</a></div><button class=alt id=mute title="Sound on/off">🔊</button></header>
+<div id=app></div>
+</main>
+<script src=game.js></script>
+<script src=roomcore.js></script>
+<script src=p2p.js></script>
+<script>
+(()=>{
+const app=document.getElementById('app'),$mute=document.getElementById('mute');
+let pid;try{pid=sessionStorage.pid||(sessionStorage.pid=Math.random().toString(36).slice(2,12));}catch{pid=Math.random().toString(36).slice(2,12);}
+const base=location.pathname.replace(/\/$/,'')+'/api';
+const rk=r=>({1:'A',11:'J',12:'Q',13:'K'}[r]||r),suit=s=>({C:'♣',D:'♦',H:'♥',S:'♠'}[s]),RED={D:1,H:1};
+const AV=['🐘','🦚','🐅','🐒','🦜','🐄','🐪','🦁'],CHIPC=['#ff9933','#f5f1e6','#138808','#1b2a7a']; // saffron, white, green, navy
+const h=(t,p={},...k)=>{const e=document.createElement(t);Object.assign(e,p);e.append(...k);return e;}; // textContent only: names can't inject HTML
+let netState='up',mode=null,g=null,room=null,code=null,closeLive=null; // mode: 'local' (one screen) | 'room' (many screens)
+let wallEl=null,composeEl=null,bubbles=new Map(),wl=null,installEv=null,myStream=null,cam=true,mic=false,seen=null,opened=[],bidVal=null,after=null,mute=false,ac;
+const fail=e=>alert(e.message);
+const post=async(p,b)=>{
+  const r=await fetch(base+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pid,...b})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j;};
+
+/* ---- transport: the page talks to "api". It is either our game server, or (with no server at all) a peer-to-peer host in a browser ---- */
+const serverApi={kind:'server',saved:()=>null,onstatus:()=>{},
+  create:name=>post('/rooms',{name}),
+  join:(c,name)=>post(`/rooms/${c}/join`,{name}),
+  act:(c,a,b={})=>post(`/rooms/${c}/${a}`,b),
+  exists:c=>fetch(`${base}/rooms/${c}?pid=${pid}`).then(r=>r.ok),
+  open:(c,onmsg)=>{const es=new EventSource(`${base}/rooms/${c}/events?pid=${pid}`);es.onmessage=e=>onmsg(JSON.parse(e.data));return()=>es.close();}};
+let api=serverApi;
+const transportReady=(async()=>{ // is there a Katora game server behind this page? if not (static hosting, file://), play peer-to-peer
+  if(location.protocol!=='file:')try{const r=await fetch(base+'/rooms/ZZZZ',{cache:'no-store'});if((r.headers.get('content-type')||'').includes('json'))return;}catch{}
+  api=window.KatoraP2P(pid);api.onstatus=s=>{netState=s;if(mode==='room')render();};
+  if(!mode)render(); // show the "resume hosting" panel, now that we know
+})();
+const busy=(b,p)=>{const t=b.textContent;b.textContent='Connecting…';b.disabled=true;return p.finally(()=>{b.textContent=t;b.disabled=false;});};
+
+/* ---- sound: tiny synth, no files ---- */
+function tone(f,d=.1,type='sine',at=0,vol=.07,to){ // `to` = slide to this pitch over the note
+  if(mute)return;
+  try{ac=ac||new AudioContext();const o=ac.createOscillator(),gn=ac.createGain(),t=ac.currentTime+at;
+    o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);gn.gain.setValueAtTime(vol,t);gn.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(gn);gn.connect(ac.destination);o.start(t);o.stop(t+d);}catch{}
+}
+const winSfx=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.18,'triangle',i*.09)),loseSfx=big=>{
+  if(!big){tone(330,.22,'sawtooth',0,.05,290);tone(294,.55,'sawtooth',.25,.05,190);return;} // "womp womp"
+  tone(1400,.55,'sine',0,.04,180);tone(70,.35,'sine',.55,.14);                                // falling whistle, then a thud
+  [[233,.3],[220,.3],[208,.3],[196,.9]].forEach(([f,d,],i)=>tone(f,d,'sawtooth',.75+i*.32,.05,i===3?110:f*.97)); // sad trombone
+};
+$mute.onclick=()=>{mute=!mute;$mute.textContent=mute?'🔇':'🔊';};
+
+/* ---- pieces ---- */
+function card(c,w=38){
+  const e=h('div',{className:'card'});e.style.setProperty('--w',w+'px');
+  e.append(h('div',{className:'in'},
+    h('div',{className:'f'+(RED[c.s]?' red':'')},h('span',{textContent:rk(c.r)}),h('span',{textContent:suit(c.s)})),
+    h('div',{className:'b'})));
+  return e;
+}
+const back=()=>{const e=card({r:1,s:'S'},36);e.querySelector('.in').style.transform='rotateY(180deg)';return e;};
+/* the katora: a brass bowl drawn in SVG. 'back' = rim + dark inside, 'front' = body + front lip.
+   Chips are placed BETWEEN the two layers so they look like they sit inside the bowl. */
+let kid=0;
+function kat(part,w=100){
+  const id='kg'+kid++;
+  const defs=`<defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="#7a4d0e"/><stop offset=".3" stop-color="#f8d874"/><stop offset=".55" stop-color="#d9a233"/><stop offset="1" stop-color="#6b430c"/></linearGradient></defs>`;
+  const back=`<ellipse cx="50" cy="63" rx="17" ry="4" fill="#6b430c"/><path d="M6 24Q8 54 50 61Q92 54 94 24Z" fill="url(#${id})"/><ellipse cx="50" cy="24" rx="44" ry="10" fill="#f6c445" stroke="#8a5a12" stroke-width="1.5"/><ellipse cx="50" cy="25" rx="39" ry="7.5" fill="#3d2304"/>`;
+  const front=`<path d="M6 24Q8 54 50 61Q92 54 94 24A44 10 0 0 1 6 24Z" fill="url(#${id})"/><path d="M94 24A44 10 0 0 1 6 24" fill="none" stroke="#f6d77a" stroke-width="2"/><path d="M13 39Q50 51 87 39" fill="none" stroke="#7a4d0e" stroke-width="1.3" opacity=".6"/><path d="M18 32Q50 43 82 32" fill="none" stroke="#fff3c4" stroke-width="1" opacity=".5"/>`;
+  return h('span',{className:'kat',innerHTML:`<svg viewBox="0 0 100 70" width="${w}" height="${w*.7}" aria-hidden="true">${defs}${part==='back'?back:part==='front'?front:back+front}</svg>`});
+}
+function bowl(pot){
+  const n=Math.min(18,Math.ceil(pot/4));
+  const pile=h('div',{className:'pile'},...Array.from({length:n},(_,i)=>{
+    const c=h('div',{className:'chip'});c.style.setProperty('--c',CHIPC[i%4]);
+    c.style.left=(14+(i*29)%64)+'px';c.style.top=(26-((i*7)%14)-Math.floor(i/6)*4)+'px';return c;}));
+  return h('div',{className:'bowl'},kat('back'),pile,kat('front'),h('div',{className:'pot',textContent:pot+' coins'}));
+}
+function seatXY(i,n,anchor){const d=(i-anchor+n)%n,th=Math.PI/2+2*Math.PI*d/n;return[50+43*Math.cos(th),50+40*Math.sin(th)];}
+function felt(players,anchor,centerEl,v){
+  const f=h('div',{className:'felt'+(players.length>4?' dense':'')},h('div',{className:'center'},...centerEl));
+  const top=v&&v.state==='over'?Math.max(...players.map(p=>p.chips)):-1;
+  players.forEach((p,i)=>{
+    const[x,y]=seatXY(i,players.length,anchor),l=v&&v.last,res=l&&l.player===p.name&&!l.pass&&!(v.plan==='reveal')?(l.win?' win':' lose'):'';
+    const s=h('div',{className:'seat'+(v&&i===v.turn?' turn':'')+(mode==='room'&&vids.has(i)?' cam':'')+res},
+      ...(p.chips===top?[h('div',{className:'crown',textContent:'👑'})]:[]),
+      avatar(i),
+      h('div',{className:'nm',textContent:p.name+(mode==='room'&&i===room.you?' (you)':'')}),
+      h('div',{className:'ch',textContent:v?'🪙 '+p.chips+(p.streak>1?' 🔥'+p.streak:''):'ready'}),
+      h('div',{className:'hand'},...(p.hand||[]).map((c,k)=>{const e=card(c,window.innerWidth<620?32:36);e.dataset.k=k;e.dataset.seat=i;return e;})));
+    s.style.left=x+'%';s.style.top=y+'%';f.append(s);
+  });
+  return h('div',{className:'wrap'},f);
+}
+function dealer(textLines){
+  return h('div',{className:'dealerrow'},h('div',{className:'dealerav',textContent:'👳'}),
+    h('div',{className:'bubble'},...textLines.map(t=>h('div',{textContent:t}))),
+    h('div',{className:'deck'},...[0,1,2].map(i=>{const b=back();b.style.left=i*2+'px';b.style.top=-i*2+'px';return b;})));
+}
+
+/* ---- animation ---- */
+function planAnim(v){
+  const first=!seen,newRound=!first&&v.no!==seen.no,newPlay=!first&&!newRound&&v.seq!==seen.seq;
+  if(first||newRound)opened=first&&v.last&&!v.last.pass?[v.last.card]:[];
+  else if(newPlay&&v.last&&!v.last.pass)opened.push(v.last.card);
+  seen={no:v.no,seq:v.seq};
+  return newRound?'deal':newPlay&&v.last?'reveal':null;
+}
+const rect=e=>e.getBoundingClientRect(),ctr=r=>[r.left+r.width/2,r.top+r.height/2];
+function dealAnim(root){
+  const dk=rect(root.querySelector('.deck')),cards=[...root.querySelectorAll('.felt .card')];
+  cards.sort((a,b)=>a.dataset.k-b.dataset.k||a.dataset.seat-b.dataset.seat);
+  cards.forEach((c,i)=>{const r=rect(c),d=i*140;
+    c.animate([{transform:`translate(${dk.left-r.left}px,${dk.top-r.top}px) scale(.8) rotate(-25deg)`},{transform:'none'}],{duration:450,delay:d,easing:'cubic-bezier(.2,.8,.3,1)',fill:'backwards'});
+    c.firstChild.animate([{transform:'rotateY(180deg)'},{transform:'rotateY(0)'}],{duration:350,delay:d+450,fill:'backwards'});
+    tone(480+(i%2)*90,.05,'square',d/1000,.03);});
+}
+function chips(from,to,n){
+  const a=ctr(rect(from)),b=ctr(rect(to));
+  for(let i=0;i<n;i++){const c=h('div',{className:'chipfly'});c.style.setProperty('--c',CHIPC[i%4]);
+    c.style.left=a[0]-9+'px';c.style.top=a[1]-9+'px';document.body.append(c);
+    const an=c.animate([{transform:'translate(0,0)'},{transform:`translate(${b[0]-a[0]}px,${b[1]-a[1]}px) scale(.8)`}],{duration:650,delay:i*70,easing:'ease-in-out',fill:'both'});
+    an.onfinish=()=>c.remove();}
+}
+function revealAnim(root,v){
+  const l=v.last;if(l.pass){tone(300,.08,'triangle',0,.05);return;}
+  const f=root.querySelector('.felt'),fl=l.big?1300:500,end=fl+(l.big?700:450); // big bids: slower flip = suspense
+  const dc=root.querySelector('.draw .card'),dk=rect(root.querySelector('.deck')),r=rect(dc);
+  dc.animate([{transform:`translate(${dk.left-r.left}px,${dk.top-r.top}px) scale(.7) rotate(15deg)`},{transform:'none'}],{duration:450,easing:'cubic-bezier(.2,.8,.3,1)',fill:'backwards'});
+  dc.firstChild.animate([{transform:'rotateY(180deg)'},{transform:'rotateY(0)'}],{duration:l.big?700:420,delay:fl,fill:'backwards'});
+  tone(480,.05,'square',0,.03);
+  if(l.big){
+    for(let i=0;i<10;i++)tone(110+i*14,.07,'sawtooth',.45+i*.085,.04); // drumroll
+    const b=h('div',{className:'float',textContent:'🥁 BIG BID!',style:'left:50%;top:26%;font-size:2rem;white-space:nowrap;color:var(--gold)'});f.append(b);
+    b.animate([{transform:'translate(-50%,0) scale(.5)',opacity:0},{transform:'translate(-50%,0) scale(1.2)',opacity:1,offset:.25},{transform:'translate(-50%,0) scale(1)',opacity:1,offset:.8},{transform:'translate(-50%,-18px)',opacity:0}],{duration:1500}).onfinish=()=>b.remove();
+  }
+  setTimeout(()=>{
+    const seat=root.querySelectorAll('.felt .seat')[v.players.findIndex(p=>p.name===l.player)],bw=root.querySelector('.bowl');
+    if(!seat||!seat.isConnected)return;
+    seat.classList.add(l.win?'win':'lose');
+    const t=h('div',{className:'float',textContent:(l.win?'+':'−')+l.bid,style:'color:var(--'+(l.win?'good':'bad')+')'});seat.append(t);
+    t.animate([{transform:'translate(-50%,0) scale(.6)',opacity:0},{transform:'translate(-50%,-26px) scale(1.2)',opacity:1,offset:.3},{transform:'translate(-50%,-52px)',opacity:0}],{duration:1400,fill:'forwards'}).onfinish=()=>t.remove();
+    const n=Math.min(8,Math.ceil(l.bid/5));
+    if(l.win){chips(bw,seat,n);winSfx();confetti(seat,l.big?70:36);}
+    else{chips(seat,bw,n);loseSfx(l.big);if(l.big){f.classList.add('shake');setTimeout(()=>f.classList.remove('shake'),500);}}
+    // now the card is face up: reveal the real numbers and the dealer's verdict
+    const me=v.players.find(p=>p.name===l.player);
+    seat.querySelector('.ch').textContent='🪙 '+me.chips+(me.streak>1?' 🔥'+me.streak:'');
+    bw.replaceWith(bowl(v.pot));
+    const bub=root.querySelector('.bubble');bub.replaceChildren(...v.lines.map(t=>h('div',{textContent:t})));
+    bub.animate([{opacity:0},{opacity:1}],{duration:300});
+  },end);
+}
+function confetti(from,n){
+  const[x,y]=ctr(rect(from)),bits=['🪙','🌼','💛','✨','🎉','🌸'];
+  for(let i=0;i<n;i++){
+    const c=h('div',{className:'confetti',textContent:bits[i%6]});c.style.left=x+'px';c.style.top=y+'px';document.body.append(c);
+    const a=Math.random()*Math.PI*2,s=90+Math.random()*190,cx=Math.cos(a)*s,cy=Math.sin(a)*s;
+    c.animate([{transform:'translate(0,0) scale(.6)',opacity:1},{transform:`translate(${cx}px,${cy-80}px) rotate(${Math.random()*540}deg)`,opacity:1,offset:.55},
+      {transform:`translate(${cx*1.1}px,${cy+130}px) rotate(720deg)`,opacity:0}],{duration:1100+Math.random()*600,easing:'ease-out'}).onfinish=()=>c.remove();
+  }
+}
+function reaction(seat,emoji){
+  const s=document.querySelectorAll('.felt .seat')[seat];if(!s)return;
+  const e=h('div',{className:'float',textContent:emoji,style:'font-size:2.2rem'}),dx=(Math.random()-.5)*60;s.append(e);
+  e.animate([{transform:'translate(-50%,0) scale(.5)',opacity:0},{transform:`translate(calc(-50% + ${dx/2}px),-30px) scale(1.3)`,opacity:1,offset:.25},
+    {transform:`translate(calc(-50% + ${dx}px),-90px) scale(1)`,opacity:0}],{duration:1600}).onfinish=()=>e.remove();
+  tone(700+Math.random()*300,.1,'triangle',0,.05);
+}
+
+/* ---- screens ---- */
+function render(){
+  app.replaceChildren();after=null;
+  if(mode==='room'&&netState==='down')app.append(h('div',{className:'panel small',textContent:'🔌 Connection to the host dropped. Reconnecting…'}));
+  if(!mode)return app.append(home());
+  if(mode==='room'&&!room)return app.append(h('p',{textContent:'Connecting…'}));
+  app.append(mode==='room'&&!room.started?lobby():table());
+  if(after)requestAnimationFrame(after);
+  if(mode)keepAwake();
+}
+function home(){
+  const names=h('input',{placeholder:'Asha, Ben, Chitra',size:26});
+  const me=h('input',{placeholder:'Your name',maxLength:20});
+  const rc=h('input',{placeholder:'Room code',maxLength:4,size:6,value:(new URLSearchParams(location.search).get('room')||'').toUpperCase()});
+  const fan=h('div',{className:'fan'},card({r:3,s:'S'},58),card({r:13,s:'H'},58),card({r:9,s:'D'},58));
+  return h('div',{},
+    ...resumePanel(),h('div',{className:'hero'},fan,h('h2',{textContent:'Two cards. One bold bid.'}),h('p',{textContent:'Will the next card land between your two?'})),
+    ...installPanel(),h('div',{className:'two'},
+      h('div',{className:'panel'},h('h3',{textContent:'🖥️ One screen'}),h('p',{className:'small',textContent:'Everyone shares this device and takes turns. 2–8 names, separated by commas.'}),names,h('br'),
+        h('button',{className:'big',textContent:'Deal the cards',style:'margin-top:10px',onclick:()=>startLocal(names.value)})),
+      h('div',{className:'panel'},h('h3',{textContent:'📱 Many screens'}),h('p',{className:'small',textContent:api.kind==='p2p'?'Free peer-to-peer: no server. Create a room and share its 4-letter code.':'Everyone plays from their own phone with a 4-letter room code.'}),me,h('br'),
+        h('button',{textContent:'Create room',style:'margin:10px 6px 6px 0',onclick:ev=>busy(ev.target,transportReady.then(()=>api.create(me.value))).then(r=>enter(r.code)).catch(fail)}),
+        rc,h('button',{className:'alt',textContent:'Join',style:'margin-left:6px',onclick:ev=>{const c=rc.value.toUpperCase();busy(ev.target,transportReady.then(()=>api.join(c,me.value))).then(()=>enter(c)).catch(fail);}}))),
+    h('details',{className:'panel'},h('summary',{textContent:'How to play'}),
+      h('p',{className:'small',textContent:'Everyone puts coins into the katora (the bowl). Each player gets two cards, face up for all to see. On your turn, bid any amount below what is in the katora, then the dealer opens one card. If it lands strictly between your two cards (Ace is lowest, King is highest) you win your bid from the katora. If not — or it matches one of your cards — your bid goes into the katora. Bid 0 to pass. Play coins only, no real money.'})));
+}
+function startLocal(txt){
+  const n=txt.split(',').map(s=>s.trim()).filter(Boolean);
+  if(n.length<2||n.length>8||new Set(n.map(s=>s.toLowerCase())).size!==n.length)return alert('Enter 2–8 different names, separated by commas');
+  g=newGame(n);startRound(g);mode='local';seen={no:0,seq:0};bidVal=null;saveLocal();render();
+}
+function enter(c){
+  code=c;mode='room';room=null;seen=null;bidVal=null;netState='up';saveRoom(c);if(closeLive)closeLive();
+  closeLive=api.open(c,d=>{if(d.react)return reaction(d.react.seat,d.react.emoji);if(d.signal)return onSignal(d.signal);if(d.chat)return showChat(d.chat);
+    if(d.you<0){fail(new Error('You are not seated in that room any more (the browser forgot who you were). Join it again with the code.'));return leave();} // e.g. a closed tab lost its saved id
+    room=d;saveRoom(code);syncPeers();render();});
+  render();
+}
+function leave(){stopVideo(false);closeWall();closeCompose();if(wl){wl.release();wl=null;}if(closeLive){closeLive();closeLive=null;}clearLocal();clearRoom();mode=g=room=seen=null;render();}
+const startOver=()=>{if(confirm(mode==='room'?(api.kind==='p2p'&&room&&room.host?'You are the host: leaving closes the room for everyone. Leave?':'Leave this room and start a new game?'):'Abandon this game and start a new one?'))leave();};
+
+/* ---- app: keep the screen awake at a table (a sleeping phone drops the connection), install prompt ---- */
+async function keepAwake(){try{if('wakeLock' in navigator&&!wl&&document.visibilityState==='visible'){wl=await navigator.wakeLock.request('screen');wl.onrelease=()=>{wl=null;};}}catch{}}
+document.addEventListener('visibilitychange',()=>{if(mode)keepAwake();});
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEv=e;if(!mode)render();}); // Android/desktop Chrome: show our own Install button
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+function installPanel(){
+  if(standalone)return[];
+  if(installEv)return[h('div',{className:'panel'},h('div',{className:'crow'},h('span',{textContent:'📲 Install Katora as an app'}),h('button',{textContent:'Install',onclick:()=>{installEv.prompt();installEv=null;render();}})))];
+  if(/iphone|ipad|ipod/i.test(navigator.userAgent))return[h('div',{className:'panel'},h('div',{className:'small',textContent:'📲 Install as an app: tap the Share button, then “Add to Home Screen”.'}))];
+  return[];
+}
+
+/* ---- video: a WebRTC mesh. Camera/mic go straight between players; our room server only relays the handshake ---- */
+const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}]}; // ponytail: STUN only; roughly 1 in 8 networks also need a TURN relay to connect
+const peers=new Map(),vids=new Map(); // seat -> connection / persistent <video> element (persistent so a redraw doesn't restart playback)
+const sendSignal=(to,data)=>api.act(code,'signal',{to,data}).catch(()=>{});
+function setStream(i,stream){
+  let v=vids.get(i);
+  if(!stream){if(v){v.srcObject=null;vids.delete(i);}if(wallEl)showWall();return;}
+  if(!v){v=h('video',{autoplay:true,playsInline:true,muted:i===room.you,title:'Tap for big view',className:i===room.you?'me':''});v.onclick=showWall;vids.set(i,v);}
+  v.srcObject=stream;v.play().catch(()=>{});if(wallEl)showWall();
+}
+function showWall(){ // full-screen grid of everyone's camera. Tiles are muted: the sound already plays from the seats
+  if(wallEl){wallEl.remove();wallEl=null;}
+  if(!vids.size)return;
+  const tiles=[...vids.entries()].sort((a,b)=>a[0]-b[0]).map(([i,v])=>{
+    const big=h('video',{autoplay:true,playsInline:true,muted:true});big.srcObject=v.srcObject;big.play().catch(()=>{});
+    return h('div',{className:'tile'+(i===room.you?' me':'')},big,h('div',{className:'name',textContent:room.seats[i]+(i===room.you?' (you)':'')}));
+  });
+  wallEl=h('div',{className:'wall',onclick:e=>{if(e.target===wallEl||e.target.classList.contains('grid'))closeWall();}},
+    h('button',{className:'alt close',textContent:'✕ Close',onclick:closeWall}),h('div',{className:'grid'},...tiles));
+  document.body.append(wallEl);
+}
+function closeWall(){if(wallEl){wallEl.remove();wallEl=null;}}
+
+/* ---- chat: live only. Each message pops up as a speech bubble on the sender's seat and fades. Nothing is stored or replayed. ---- */
+function showChat(m){
+  tone(880,.05,'triangle',0,.05);
+  const old=bubbles.get(m.seat);if(old)old.remove();
+  const s=document.querySelectorAll('.felt .seat')[m.seat];if(!s)return;
+  const r=s.getBoundingClientRect(),below=r.top<90,b=h('div',{className:'say',textContent:m.text}); // top-row seats: show the bubble underneath
+  b.style.left=Math.min(innerWidth-110,Math.max(110,r.left+r.width/2))+'px';
+  b.style.top=(below?r.bottom:r.top)+'px';b.style.transform=below?'translate(-50%,6px)':'translate(-50%,-100%)';
+  document.body.append(b);bubbles.set(m.seat,b);
+  setTimeout(()=>{if(bubbles.get(m.seat)===b)bubbles.delete(m.seat);b.remove();},8000);
+}
+function toggleCompose(){
+  if(composeEl)return closeCompose();
+  const input=h('input',{placeholder:'Say something to the table…',maxLength:200,autocomplete:'off'});
+  const send=()=>{const t=input.value.trim();if(!t)return;input.value='';api.act(code,'chat',{text:t}).catch(fail);input.focus();};
+  input.onkeydown=e=>{if(e.key==='Enter')send();};
+  composeEl=h('div',{className:'compose'},input,h('button',{textContent:'Send',onclick:send}),h('button',{className:'alt sm',textContent:'✕',onclick:closeCompose}));
+  document.body.append(composeEl);input.focus();
+}
+function closeCompose(){if(composeEl){composeEl.remove();composeEl=null;}}
+const chatButton=()=>mode==='room'?[h('button',{className:'alt sm',textContent:'💬 Chat',onclick:toggleCompose})]:[];
+const avatar=i=>{const d=h('div',{className:'av'}),v=mode==='room'&&vids.get(i);if(v)d.append(v);else d.textContent=AV[i%8];return d;};
+function drop(j){const p=peers.get(j);if(p){p.pc.close();peers.delete(j);}setStream(j,null);}
+function connect(j,initiator){
+  const pc=new RTCPeerConnection(ICE),p={pc,pending:[]};peers.set(j,p);
+  myStream.getTracks().forEach(t=>pc.addTrack(t,myStream));
+  pc.ontrack=e=>{setStream(j,e.streams[0]);render();};
+  pc.onicecandidate=e=>{if(e.candidate)sendSignal(j,{c:e.candidate});};
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed'){setStream(j,null);render();}}; // ponytail: no retry yet
+  if(initiator)pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>sendSignal(j,{d:pc.localDescription})).catch(()=>{});
+  return p;
+}
+async function onSignal({from,data}){
+  if(!myStream)return;
+  const p=peers.get(from)||connect(from,false),pc=p.pc; // created lazily: a candidate can arrive before the offer
+  try{
+    if(data.d){
+      await pc.setRemoteDescription(data.d);
+      for(const c of p.pending.splice(0))await pc.addIceCandidate(c).catch(()=>{});
+      if(data.d.type==='offer'){await pc.setLocalDescription(await pc.createAnswer());sendSignal(from,{d:pc.localDescription});}
+    }else if(data.c){pc.remoteDescription?await pc.addIceCandidate(data.c).catch(()=>{}):p.pending.push(data.c);}
+  }catch(e){console.warn('video signal',e);}
+}
+// Rule that avoids both sides offering at once: when two players both have video on, the LOWER seat makes the offer.
+let announcing=false;
+function syncPeers(){
+  if(!myStream){for(const j of [...peers.keys()])drop(j);return;}
+  // the host/server forgets who is on camera when it restarts or we reconnect: tell it again
+  if(room.you>=0&&!room.video[room.you]&&!announcing){announcing=true;api.act(code,'video',{on:true}).catch(()=>{}).finally(()=>{announcing=false;});}
+  room.video.forEach((on,j)=>{
+    if(j===room.you)return;
+    if(on&&!peers.has(j)&&room.you<j)connect(j,true);
+    if(!on&&peers.has(j))drop(j);
+  });
+}
+async function startVideo(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return alert('Video needs a secure link (https). Use the shared https link, or open the game on localhost.');
+  try{myStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:320},height:{ideal:240},frameRate:{ideal:15},facingMode:'user'},audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){return alert('Could not start the camera ('+(e.message||e.name)+'). Allow camera access and try again.');}
+  cam=true;mic=false;myStream.getAudioTracks().forEach(t=>t.enabled=false); // mic starts muted: no echo when friends sit together
+  setStream(room.you,myStream);
+  announcing=true;await api.act(code,'video',{on:true}).catch(fail);announcing=false;
+  syncPeers();render();
+}
+function stopVideo(announce=true){
+  for(const j of [...peers.keys()])drop(j);
+  if(myStream){myStream.getTracks().forEach(t=>t.stop());myStream=null;}
+  for(const i of [...vids.keys()])setStream(i,null);
+  if(announce&&mode==='room')api.act(code,'video',{on:false}).catch(()=>{});
+}
+function videoButtons(){
+  if(mode!=='room')return[];
+  if(!myStream)return[h('button',{className:'alt sm',textContent:'📹 Join video',title:'Your camera goes straight to the other players (peer-to-peer). Your mic starts muted.',onclick:startVideo})];
+  return[h('button',{className:'alt sm',textContent:cam?'📷 Camera on':'📷 Camera off',onclick:()=>{cam=!cam;myStream.getVideoTracks().forEach(t=>t.enabled=cam);render();}}),
+    h('button',{className:'alt sm',textContent:mic?'🎤 Mic on':'🎤 Mic off',onclick:()=>{mic=!mic;myStream.getAudioTracks().forEach(t=>t.enabled=mic);render();}}),
+    h('button',{className:'alt sm',textContent:'📺 Big view',onclick:showWall}),
+    h('button',{className:'alt sm',textContent:'Leave video',onclick:()=>{stopVideo();render();}})];
+}
+
+/* ---- remember games for a while, so a reload doesn't lose them ---- */
+const KEEP=12*36e5; // 12 hours, same as the server keeps rooms
+const read=(store,k)=>{try{const s=JSON.parse(store[k]);return Date.now()-s.ts<KEEP?s:null;}catch{return null;}};
+const keep={local:()=>read(localStorage,'katora.local'),room:()=>read(sessionStorage,'katora.room')}; // room is tied to this tab's player id, so it lives in sessionStorage
+const saveLocal=()=>{try{if(g.state==='over')localStorage.removeItem('katora.local');else localStorage['katora.local']=JSON.stringify({ts:Date.now(),game:dump(g)});}catch{}};
+const saveRoom=c=>{try{sessionStorage['katora.room']=JSON.stringify({ts:Date.now(),code:c});}catch{}};
+const clearLocal=()=>{try{localStorage.removeItem('katora.local');}catch{}},clearRoom=()=>{try{sessionStorage.removeItem('katora.room');}catch{}};
+const ago=ts=>{const m=Math.round((Date.now()-ts)/6e4);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago';};
+function rejoin(c){
+  transportReady.then(()=>api.exists(c)).then(ok=>{if(!ok)throw new Error('That room has expired.');enter(c);}).catch(e=>{clearRoom();fail(e);render();});
+}
+async function resumeHosting(){ // peer-to-peer host reloaded: rebuild the room from the saved copy
+  try{await transportReady;const r=await api.resumeHost();pid=r.pid;try{sessionStorage.pid=pid;}catch{}enter(r.code);}catch(e){fail(e);}
+}
+function resumePanel(){
+  const L=keep.local(),Rm=keep.room(),rows=[];
+  if(L)rows.push(h('div',{className:'crow'},h('span',{textContent:'One-screen game in progress (saved '+ago(L.ts)+')'}),
+    h('button',{textContent:'Resume',onclick:()=>{g=restore(L.game);mode='local';seen=null;bidVal=null;render();}}),
+    h('button',{className:'alt',textContent:'New game',onclick:()=>{clearLocal();render();}})));
+  const Hs=api.saved(),mine=Hs&&(Hs.pid===pid||!Rm); // another tab of ours that joined as a GUEST must not be offered the host's room
+  if(mine)rows.push(h('div',{className:'crow'},h('span',{textContent:'You were hosting room '+Hs.code+' (saved '+ago(Hs.ts)+')'}),
+    h('button',{textContent:'Resume hosting',onclick:resumeHosting}),
+    h('button',{className:'alt',textContent:'Discard',onclick:()=>{try{localStorage.removeItem('katora.p2phost');}catch{}clearRoom();render();}})));
+  if(Rm&&!(mine&&Hs.code===Rm.code))rows.push(h('div',{className:'crow'},h('span',{textContent:'You were in room '+Rm.code}),
+    h('button',{textContent:'Rejoin',onclick:()=>rejoin(Rm.code)}),
+    h('button',{className:'alt',textContent:'Forget it',onclick:()=>{clearRoom();render();}})));
+  return rows.length?[h('div',{className:'panel'},h('h3',{textContent:'Welcome back'}),...rows)]:[];
+}
+function lobby(){
+  seen={no:0,seq:0}; // so the first deal is animated for everyone waiting here
+  const link=location.origin+location.pathname+'?room='+room.code;
+  return h('div',{},
+    dealer([room.host?'Waiting for your friends… share the code, then deal the cards.':'Waiting for the host to deal…']),
+    felt(room.seats.map(n=>({name:n,chips:100,hand:null})),Math.max(0,room.you),[h('div',{style:'text-align:center'},h('div',{className:'small',textContent:'ROOM CODE'}),h('div',{style:'font-size:2.4rem;font-weight:900;letter-spacing:.2em;color:var(--gold)',textContent:room.code}))],null),
+    h('div',{className:'panel controls'},h('div',{className:'crow'},h('span',{className:'small',textContent:link})),...(api.kind==='p2p'&&room.host?[h('div',{className:'small crow',textContent:'🌐 Free peer-to-peer room: the game runs in this browser. Keep this tab open.'})]:[]),
+      h('div',{className:'crow'},h('button',{className:'alt',textContent:'Leave room',onclick:startOver}),...chatButton(),...videoButtons(),h('button',{className:'alt',textContent:'Copy invite link',onclick:()=>{try{navigator.clipboard.writeText(link);}catch{}}}),
+      room.host?h('button',{className:'big',textContent:'Deal the cards',disabled:room.seats.length<2,onclick:()=>api.act(code,'start',{}).catch(fail)}):h('span'))));
+}
+function local(a,b){
+  try{if(a==='bid')play(g,b.bid);else if(a==='next')startRound(g);else if(a==='end')g.state='over';}catch(e){fail(e);}
+  saveLocal();render();
+}
+function odds(v,p){ // approx: counts only cards we have seen (hands + opened this round)
+  const[a,b]=p.hand.map(c=>c.r),sc=[...v.players.flatMap(q=>q.hand||[]),...opened];
+  return Math.max(0,4*(b-a-1)-sc.filter(c=>c.r>a&&c.r<b).length)/(52-sc.length);
+}
+function table(){
+  const v=mode==='local'?{...view(g)}:{...room.game},isHost=mode==='local'||room.host;
+  v.plan=planAnim(v);
+  const act=(a,b={})=>mode==='local'?local(a,b):api.act(code,a,b).catch(fail);
+  const l=v.last,mine=v.state==='playing'&&(mode==='local'||v.turn===room.you),cur=v.players[v.turn];
+  const L=[],pick=a=>a[v.seq%a.length]; // same seq on every screen = same joke on every screen
+  if(l){
+    if(l.pass)L.push(pick([`${l.player} passes. 🙈`,`${l.player} holds their nerve — pass!`,`${l.player} plays it safe. 🐔`]));
+    else{
+      const post=l.card.r===l.lo||l.card.r===l.hi,st=(v.players.find(p=>p.name===l.player)||{}).streak;
+      L.push(`${rk(l.card.r)}${suit(l.card.s)}! `+(l.win
+        ?pick([`Nice! Between ${rk(l.lo)} and ${rk(l.hi)} — ${l.player} wins ${l.bid}! 🎉`,`Right in the gap! ${l.player} takes ${l.bid}. 💰`,`Smooth! ${l.player} scoops ${l.bid}. 😎`])+(st>2?` 🔥 ${st} wins in a row!`:'')
+        :post?pick([`Right on the edge! ${l.player}'s ${l.bid} drops into the katora. 😭`,`Hit the post! So close, ${l.player}. 😱`])
+          :pick([`Not between! ${l.player}'s ${l.bid} goes into the katora. 😬`,`Oh no! The katora takes ${l.player}'s ${l.bid}. 🪙`,`Ouch! ${l.player} loses ${l.bid}. 💸`])));
+    }
+  }
+  if(v.state==='playing')L.push(mine?(l?'Your move!':'Cards are out! You go first.')+` Bid up to ${v.maxBid}, or pass.`:`${cur.name} is thinking…`);
+  else if(v.state==='roundEnd')L.push(`Round over. ${v.pot} coins in the katora. Next round?`);
+  else{const w=[...v.players].sort((a,b)=>b.chips-a.chips)[0];L.push(`Game over! 👑 ${w.name} finishes with ${w.chips} coins.`);}
+  v.lines=L;
+  const draw=h('div',{className:'draw'},l&&!l.pass?card(l.card,54):h('div',{className:'slot',textContent:'?'}),h('span',{textContent:l&&!l.pass?'opened card':'dealer\u2019s card'}));
+  // while the card is still turning over, show the numbers from BEFORE the bid so the result isn't spoiled
+  const hold=v.plan==='reveal'&&!l.pass,undo=hold?(l.win?-l.bid:l.bid):0;
+  const shown=hold?{...v,pot:v.pot-undo,players:v.players.map(p=>p.name===l.player?{...p,chips:p.chips+undo,streak:l.win?p.streak-1:0}:p)}:v;
+  const out=h('div',{},dealer(hold?['Opening the card… 🤞']:L),
+    felt(shown.players,mode==='room'?room.you:0,[bowl(shown.pot),draw],shown));
+  const box=h('div',{className:'panel controls'+(hold?' lock':''),style:hold?'--d:'+(l.big?2:.95)+'s':''}),main=h('div',{className:'crow'});
+  if(mine){
+    const max=v.maxBid;if(bidVal===null||bidVal>max)bidVal=Math.min(v.ante,max);
+    const num=h('div',{className:'bidnum',textContent:bidVal}),rng=h('input',{type:'range',min:0,max,step:1,value:bidVal});
+    const set=n=>{bidVal=Math.max(0,Math.min(max,n));rng.value=bidVal;num.textContent=bidVal;};
+    rng.oninput=()=>set(+rng.value);
+    const o=odds(v,cur),band=o<.15?0:o<.3?1:o<.5?2:o<.7?3:4; // a hint, never a number
+    const hint=pick([['Pray to the gods! 🙏 Very risky.','This is pure gambling! 🎲'],['Spicy bet… 🌶️','Only for the brave. 😬'],['Looks decent. 🤔','Feels like a coin toss. 🪙'],['Good odds! 😏','Luck is smiling on you. ✨'],['It will land in between! 😎','Surely a win this time! 🎉']][band]);
+    box.append(h('div',{className:'crow'},h('span',{className:'small',textContent:cur.name+', your bid:'}),num,rng),
+      h('div',{className:'crow'},h('span',{className:'small',textContent:hint})));
+    main.append(h('button',{className:'big',textContent:'Bid',disabled:max<1,onclick:()=>{const n=+rng.value;bidVal=null;act('bid',{bid:n});}}),
+      h('button',{className:'alt big',textContent:'Pass',onclick:()=>{bidVal=null;act('bid',{bid:0});}}));
+  }else if(v.state==='roundEnd')main.append(h('button',{className:'big',textContent:'Next round',onclick:()=>act('next')}));
+  else if(v.state==='over')main.append(h('button',{className:'big',textContent:'Back to start',onclick:leave}));
+  else main.append(h('span',{className:'small',textContent:`${cur.name}\u2019s turn…`}));
+  main.append(...chatButton(),...videoButtons());
+  const who=v.turn>=0?v.turn:Math.max(0,v.players.findIndex(p=>l&&p.name===l.player)); // one-screen mode: reactions come from whoever is up
+  main.append(h('div',{className:'react'},...['😂','🔥','😱','👏','😭','🙏'].map(e=>h('button',{className:'alt',textContent:e,
+    onclick:()=>mode==='local'?reaction(who,e):api.act(code,'react',{emoji:e}).catch(()=>{})}))));
+  if(v.state!=='over'&&isHost)main.append(h('button',{className:'alt sm',textContent:'End game',onclick:()=>act('end')}));
+  main.append(h('button',{className:'alt sm',textContent:'New game',onclick:startOver}));
+  box.append(main);out.append(box);
+  after=()=>{if(v.plan==='deal')dealAnim(out);else if(v.plan==='reveal')revealAnim(out,v);};
+  return out;
+}
+document.getElementById('logo').append(kat('full',38));
+document.getElementById('home').href=location.pathname.startsWith('/p/')?'/':'../'; // game server: hub is at /;  static site: hub is one folder up
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{}); // lets the app install and open offline
+render();
+})();
+</script>

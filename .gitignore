@@ -1,0 +1,13 @@
+# generated, local or private: never commit these
+
+# rebuilt from source on every deploy
+dist/
+
+# usage logs and saved rooms (player ids), local only
+data/
+
+node_modules/
+agents/log.txt
+agents/TASKS.md
+*.log
+.DS_Store
