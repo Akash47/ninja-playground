@@ -300,21 +300,19 @@ function render(){
 function home(){
   const names=h('input',{placeholder:'Asha, Ben, Chitra',size:26});
   const me=h('input',{placeholder:'Your name',maxLength:20});
-  const rc=h('input',{placeholder:'Room code',maxLength:4,size:6,value:(new URLSearchParams(location.search).get('room')||'').toUpperCase()});
+  const rc=h('input',{placeholder:'Code',maxLength:4,size:5,value:(new URLSearchParams(location.search).get('room')||'').toUpperCase()});
   const fan=h('div',{className:'fan'},card({r:3,s:'S'},58),card({r:13,s:'H'},58),card({r:9,s:'D'},58));
   return h('div',{},
     ...resumePanel(),h('div',{className:'hero'},fan,h('h2',{textContent:'Two cards. One bold bid.'}),h('p',{textContent:'Will the next card land between your two?'})),
-    ...installPanel(),h('div',{className:'two'},
-      h('div',{className:'panel'},h('h3',{textContent:'🖥️ One screen'}),h('p',{className:'small',textContent:'Everyone shares this device and takes turns. 2–8 names, separated by commas.'}),names,h('br'),
-        h('button',{className:'big',textContent:'Deal the cards',style:'margin-top:10px',onclick:()=>startLocal(names.value)})),
-      h('div',{className:'panel'},h('h3',{textContent:'📱 Many screens'}),h('p',{className:'small',textContent:api.kind==='p2p'?'Free peer-to-peer: no server. Create a room and share its 4-letter code.':'Everyone plays from their own phone with a 4-letter room code.'}),me,h('br'),
-        h('button',{textContent:'Create room',style:'margin:10px 6px 6px 0',onclick:ev=>busy(ev.target,transportReady.then(()=>api.create(me.value))).then(r=>enter(r.code)).catch(fail)}),
-        rc,h('button',{className:'alt',textContent:'Join',style:'margin-left:6px',onclick:ev=>{const c=rc.value.toUpperCase();busy(ev.target,transportReady.then(()=>api.join(c,me.value))).then(()=>enter(c)).catch(fail);}}))),
-    publicPanel(me,rc),
+    ...installPanel(),
+    onlinePanel(me,rc),
+    h('details',{className:'panel'},h('summary',{textContent:'🖥️ Playing on one shared screen instead?'}),
+      h('p',{className:'small',textContent:'Everyone shares this device and takes turns. 2–8 names, separated by commas.'}),names,
+      h('button',{className:'big',textContent:'Deal the cards',style:'margin-top:10px',onclick:()=>startLocal(names.value)})),
     h('details',{className:'panel'},h('summary',{textContent:'How to play'}),
       h('p',{className:'small',textContent:'Everyone puts coins into the katora (the bowl). Each player gets two cards, face up for all to see. On your turn, bid any amount below what is in the katora, then the dealer opens one card. If it lands strictly between your two cards (Ace is lowest, King is highest) you win your bid from the katora. If not — or it matches one of your cards — your bid goes into the katora. Bid 0 to pass. Play coins only, no real money.'})));
 }
-function publicPanel(me,rc){ // meet people you don't know: browse open tables or get matched
+function onlinePanel(me,rc){ // one place for everything online: quick match, browse tables, private room, join by code
   const list=h('div',{className:'small',style:'margin-top:8px'});
   const needName=()=>!me.value.trim()&&(me.focus(),alert('Type your name first (the box above Create room).'),true);
   const joinTable=(c,btn)=>needName()?Promise.resolve():busy(btn,transportReady.then(()=>api.join(c,me.value))).then(()=>enter(c));
@@ -329,9 +327,12 @@ function publicPanel(me,rc){ // meet people you don't know: browse open tables o
     for(const x of await api.browse())try{await api.join(x.code,me.value);return x.code;}catch(e){if(/name/.test(e.message))throw e;} // full or gone: try the next
     const r=await api.create(me.value);await api.act(r.code,'public',{on:true});return r.code; // nobody waiting: open a public table and wait
   })()).then(enter).catch(fail);
-  return h('div',{className:'panel'},h('h3',{textContent:'🌍 Play with anyone'}),
-    h('p',{className:'small',textContent:'Use the name above. Quick match sits you at an open table, or opens one for others to find. Tables are public: be kind.'}),
-    h('button',{textContent:'🎲 Quick match',onclick:quick}),h('button',{className:'alt',textContent:'🔎 Find a table',style:'margin-left:6px',onclick:find}),list);
+  const mk=ev=>busy(ev.target,transportReady.then(()=>api.create(me.value))).then(r=>enter(r.code)).catch(fail);
+  const join=ev=>{const c=rc.value.toUpperCase();if(needName())return;busy(ev.target,transportReady.then(()=>api.join(c,me.value))).then(()=>enter(c)).catch(fail);};
+  return h('div',{className:'panel'},h('h3',{textContent:'🌍 Play online'}),
+    h('p',{className:'small',textContent:api.kind==='p2p'?'Free peer-to-peer, no sign-up. Type your name and jump in.':'Type your name and jump in from any phone.'}),me,
+    h('div',{className:'crow',style:'margin-top:10px'},h('button',{className:'big',textContent:'🎲 Quick match',onclick:quick}),h('button',{className:'alt',textContent:'🔎 Browse tables',onclick:find})),list,
+    h('div',{className:'crow',style:'margin-top:12px'},h('span',{className:'small',textContent:'With friends:'}),h('button',{className:'alt',textContent:'Create private table',onclick:mk}),h('span',{className:'small',textContent:'or code'}),rc,h('button',{className:'alt',textContent:'Join',onclick:join})));
 }
 function startLocal(txt){
   const n=txt.split(',').map(s=>s.trim()).filter(Boolean);
