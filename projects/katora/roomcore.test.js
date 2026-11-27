@@ -24,4 +24,13 @@ assert.throws(()=>core.apply(r,'chat',{pid:'p2',text:'   '}),/empty message/);
 assert.throws(()=>core.apply(r,'chat',{pid:'stranger',text:'hi'}),/join the room first/);
 assert.equal(core.apply(r,'chat',{pid:'p2',text:'x'.repeat(500)})[0].msg.chat.text.length,200,'long messages are cut to 200');
 assert.equal(r.chat,undefined,'chat is not stored anywhere in the room (no history)');
+// public tables + kick
+const q=core.newRoom('QQQQ','h1','Host');core.apply(q,'join',{pid:'g1',name:'Gita'});core.apply(q,'join',{pid:'g2',name:'Hari'});
+assert.throws(()=>core.apply(q,'public',{pid:'g1',on:true}),/only the host/);
+core.apply(q,'public',{pid:'h1',on:true});assert.equal(core.snap(q,'g1').pub,true);
+assert.throws(()=>core.apply(q,'kick',{pid:'g1',to:2}),/only the host/);
+assert.throws(()=>core.apply(q,'kick',{pid:'h1',to:0}),/bad target/,'host cannot remove themselves');
+core.apply(q,'kick',{pid:'h1',to:1});
+assert.deepEqual(q.seats.map(x=>x.name),['Host','Hari']);assert.equal(core.snap(q,'g1').you,-1,'removed player sees they are out');
+assert.throws(()=>core.apply(q,'join',{pid:'g1',name:'Gita'}),/removed you/,'and cannot rejoin');
 console.log('ok: room rules (roomcore)');

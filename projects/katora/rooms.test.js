@@ -68,6 +68,16 @@ const post=(p,b)=>fetch(B+p,{method:'POST',headers:{'content-type':'application/
     assert.equal(back.game.pot,before.pot);assert.equal(back.game.state,'roundEnd');
     assert.equal((await post(`/rooms/${c}/next`,{pid:'p1'})).ok,true,'game keeps playing after a restart');
     assert.equal((await fetch(`${B}/rooms/ZZZZ?pid=p1`)).status,404,'unknown room is 404');
+    const ls=async()=>(await(await fetch(`${B}/rooms`)).json()).rooms;
+    const pc=(await post('/rooms',{pid:'pub1',name:'Pia'})).code;
+    assert(!(await ls()).some(x=>x.code===pc),'new rooms are private');
+    await post(`/rooms/${pc}/public`,{pid:'pub1',on:true});
+    assert.deepEqual((await ls()).find(x=>x.code===pc),{code:pc,host:'Pia',n:1,max:8},'public room is listed');
+    assert.equal((await post(`/rooms/${pc}/join`,{pid:'pub2',name:'Quin'})).ok,true);
+    await post(`/rooms/${pc}/kick`,{pid:'pub1',to:1});
+    assert.equal((await post(`/rooms/${pc}/join`,{pid:'pub2',name:'Quin'})).status,400,'kicked player cannot rejoin');
+    await post(`/rooms/${pc}/join`,{pid:'pub3',name:'Ravi'});await post(`/rooms/${pc}/start`,{pid:'pub1'});
+    assert(!(await ls()).some(x=>x.code===pc),'started rooms leave the list');
     let n=0,last;for(;n<400;n++){last=await post('/rooms',{pid:'bulk'+n,name:'B'});if(last.status===400)break;}
     assert(n>=150&&n<400&&/busy/.test(last.error),'room cap protects a public server');
     console.log('ok: rooms (create, join, host-only start, turn order, bid validation, live push, conservation, survives restart, room cap)');

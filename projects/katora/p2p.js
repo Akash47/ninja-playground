@@ -9,9 +9,11 @@ const core=window.KatoraRooms;
 const BROKER=new URLSearchParams(location.search).get('broker')||'wss://0.peerjs.com/peerjs?key=peerjs';
 const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},
   {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}]}; // PeerJS's free public relay (best effort, may change)
-const L='ABCDEFGHJKLMNPQRSTUVWXYZ',rid=()=>Math.random().toString(36).slice(2,10),HOST=c=>'katora-'+c,KEEP=12*36e5,SAVE='katora.p2phost';
+const L='ABCDEFGHJKLMNPQRSTUVWXYZ',rid=()=>Math.random().toString(36).slice(2,10),HOST=c=>'katora-'+c,KEEP=12*36e5,SAVE='katora.p2phost',SLOTS=30,LOB=i=>'katora-lobby-'+i;
 // The broker only relays messages whose payload has these fields (found by testing against the real service).
 const pay=(cid,x)=>({type:'data',connectionId:cid,label:'katora',reliable:true,serialization:'json',...x});
+// the broker also drops CANDIDATE messages that don't look like an ICE candidate, so lobby pings wear that shape
+const ice=text=>({candidate:text,sdpMid:'0',sdpMLineIndex:0});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 // ---- the meeting point ----
@@ -38,14 +40,27 @@ function hostRoom(pid,r){
   const conns=new Map(),pcs=new Map(); // player id -> data channel;  broker peer id -> connection being set up
   let sock=null,alive=true,onLocal=()=>{};
   const send=(ch,o)=>{if(ch.readyState==='open')ch.send(JSON.stringify(o));};
-  const persist=()=>{try{localStorage[SAVE]=JSON.stringify({ts:Date.now(),code:r.code,pid,seats:r.seats.map(s=>({pid:s.pid,name:s.name})),game:r.game&&dump(r.game)});}catch{}};
+  const persist=()=>{try{localStorage[SAVE]=JSON.stringify({ts:Date.now(),code:r.code,pid,seats:r.seats.map(s=>({pid:s.pid,name:s.name})),pub:r.pub,game:r.game&&dump(r.game)});}catch{}};
   function deliver(fx){ // same effects the Node server delivers over SSE
     for(const e of fx){
       if(e.snap){onLocal(core.snap(r,pid));for(const[p,ch]of conns)send(ch,{t:'snap',d:core.snap(r,p)});}
       else if(e.msg){if(e.to==='all'||e.to===pid)onLocal(e.msg);for(const[p,ch]of conns)if(e.to==='all'||e.to===p)send(ch,{t:'msg',d:e.msg});}
     }
   }
-  function run(from,a,p){const fx=core.apply(r,a,{...p,pid:from});persist();deliver(fx);} // throws if the rules refuse
+  function run(from,a,p){const fx=core.apply(r,a,{...p,pid:from});persist();deliver(fx);lobby();} // throws if the rules refuse
+  // "Find a table": a public waiting room also sits on one of a few well-known broker ids; a browsing player pings them all and each answers with its room card.
+  let lob=null,claiming=false;
+  async function lobby(){
+    if(!alive)return;
+    if(!(r.pub&&!r.game&&r.seats.length<8)){if(lob){lob.close();lob=null;}return;}
+    if(lob||claiming)return;claiming=true;
+    for(let i=0;i<SLOTS&&!lob;i++)try{
+      const s=await meet(LOB(i),m=>{if(m.type==='CANDIDATE'&&m.payload&&m.payload.candidate&&m.payload.candidate.candidate==='katora-list')s.send({type:'CANDIDATE',dst:m.src,payload:pay(m.payload.connectionId,{candidate:ice(JSON.stringify({code:r.code,host:r.seats[0].name,n:r.seats.length,max:8}))})});},()=>{if(lob===s)lob=null;});
+      lob=s;
+    }catch(e){if(!e.taken)break;} // taken = another table has this slot, try the next
+    claiming=false;
+  }
+  const tick=setInterval(lobby,10000);
   function wire(ch){
     let who=null;
     ch.onmessage=e=>{
@@ -84,14 +99,22 @@ function hostRoom(pid,r){
       if(st.pc.remoteDescription)for(const c of st.pending.splice(0))await st.pc.addIceCandidate(c).catch(()=>{});
     }
   }
-  const connect=async()=>{sock=await meet(HOST(r.code),onBroker,()=>{if(alive)sleep(2000).then(()=>alive&&connect().catch(()=>{}));});};
+  const connect=async()=>{sock=await meet(HOST(r.code),onBroker,()=>{if(alive)sleep(2000).then(()=>alive&&connect().catch(()=>{}));});lobby();};
   return{
     code:r.code,role:'host',connect,
     set onmsg(fn){onLocal=fn;},
     snapshot:()=>core.snap(r,pid),
     act:async(a,p)=>{run(pid,a,p||{});return{ok:true};},
-    close(){alive=false;try{sock&&sock.close();}catch{}for(const ch of conns.values())try{ch.close();}catch{}for(const s of pcs.values())try{s.pc.close();}catch{}localStorage.removeItem(SAVE);},
+    close(){alive=false;clearInterval(tick);try{sock&&sock.close();lob&&lob.close();}catch{}for(const ch of conns.values())try{ch.close();}catch{}for(const s of pcs.values())try{s.pc.close();}catch{}localStorage.removeItem(SAVE);},
   };
+}
+
+// ---- BROWSE: ping every lobby slot, collect the room cards that answer. The broker only relays handshake-shaped messages, so the ping and the reply ride in ICE-candidate-shaped ones ----
+async function browse(){
+  const out=new Map(),sock=await meet('katora-g-'+rid()+rid(),m=>{let i;try{i=m.type==='CANDIDATE'&&JSON.parse(m.payload.candidate.candidate);}catch{}if(i&&typeof i==='object')out.set(m.src,i);});
+  for(let i=0;i<SLOTS;i++)sock.send({type:'CANDIDATE',dst:LOB(i),payload:pay('ls_'+rid(),{candidate:ice('katora-list')})});
+  await sleep(2500);sock.close();
+  return[...out.values()].filter(i=>/^[A-Z]{4}$/.test(i.code)).map(i=>({code:i.code,host:String(i.host||'').slice(0,20),n:+i.n||1,max:+i.max||8})); // other people's data: validate before showing
 }
 
 // ---- GUEST: connects to the host; keeps retrying if the link drops ----
@@ -158,7 +181,7 @@ window.KatoraP2P=function(pid){
   };
   api.resumeHost=async()=>{ // the host reloaded: rebuild the room from the saved copy and re-register under the same code
     const s=api.saved();if(!s)throw new Error('Nothing to resume.');
-    const r={code:s.code,seats:s.seats,game:s.game&&restore(s.game)};
+    const r={code:s.code,seats:s.seats,pub:s.pub,game:s.game&&restore(s.game)};
     const h=hostRoom(s.pid,r);
     for(let i=0;;i++){try{await h.connect();break;}catch(e){if(!e.taken||i>=5)throw e;await sleep(1500);}} // the old registration may take a moment to expire
     link=h;return{code:s.code,pid:s.pid};
@@ -168,6 +191,7 @@ window.KatoraP2P=function(pid){
     const g=guestLink(code,pid,status);await g.start(false);link=g;
     await g.act('join',{name});return{ok:true};
   };
+  api.browse=browse;
   api.exists=async code=>{ // a guest can't know in advance; the connection attempt tells them
     if(!link||link.code!==code){const g=guestLink(code,pid,status);link=g;}
     return true;

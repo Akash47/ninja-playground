@@ -18,6 +18,9 @@ The same page works two ways. At load it checks for a Katora game server; if the
 
 Files: `roomcore.js` (rules, shared with the server), `p2p.js` (host, guest, broker handshake), `game.js` (the cards engine). Tests: `roomcore.test.js`, `rooms.test.js`.
 
+## Meeting strangers: Find a table / Quick match
+A host can tick **Public table**. While the room is waiting for players, the host's browser also registers on one of 30 well-known broker ids (`katora-lobby-0..29`). "Find a table" pings all 30 and each live one answers with `{code, host, n, max}`; "Quick match" joins the first open table or opens a public one. The broker only relays messages shaped like real WebRTC handshakes, so the ping and reply are wrapped as ICE-candidate messages (found by testing; see `ice()` in `p2p.js`). In server mode the same list is `GET /rooms`. Hosts can remove a player (`kick`, blocked from rejoining). Limits: at most 30 public tables listed, and a table vanishes when its host closes the tab.
+
 ## Hosting it for free
 Run `./tools/make-static.sh`. It builds the whole static website into `dist/`: the Ninja Playground home page plus every project marked `"static": true` (no server code, no tests). Upload the contents of `dist/` to any free static host:
 - Netlify (drag and drop the folder),

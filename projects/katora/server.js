@@ -9,10 +9,10 @@ const rooms=new Map(),L='ABCDEFGHJKLMNPQRSTUVWXYZ',clean=core.clean;
 const MAX_ROOMS=200,MAX_WATCHERS=30,TTL=12*36e5,FILE=process.env.KATORA_ROOMS||path.join(__dirname,'../../data/katora-rooms.json');
 function save(){ // ponytail: rewrites the whole file on every change; fine for a few rooms, debounce or use SQLite if it grows
   try{fs.mkdirSync(path.dirname(FILE),{recursive:true});
-    fs.writeFileSync(FILE,JSON.stringify([...rooms.values()].map(r=>({code:r.code,at:r.at,seats:r.seats.map(s=>({pid:s.pid,name:s.name})),game:r.game&&dump(r.game)}))));}catch(e){console.error('katora: could not save rooms',e.message);}
+    fs.writeFileSync(FILE,JSON.stringify([...rooms.values()].map(r=>({code:r.code,at:r.at,pub:r.pub,seats:r.seats.map(s=>({pid:s.pid,name:s.name})),game:r.game&&dump(r.game)}))));}catch(e){console.error('katora: could not save rooms',e.message);}
 }
 try{for(const o of JSON.parse(fs.readFileSync(FILE,'utf8')))
-  if(Date.now()-o.at<TTL)rooms.set(o.code,{code:o.code,at:o.at,seats:o.seats,game:o.game&&restore(o.game),clients:new Set()});}catch{}
+  if(Date.now()-o.at<TTL)rooms.set(o.code,{code:o.code,at:o.at,pub:o.pub,seats:o.seats,game:o.game&&restore(o.game),clients:new Set()});}catch{}
 const live=c=>{const r=rooms.get(c);if(r&&Date.now()-r.at>TTL){rooms.delete(c);return;}return r;};
 const push=r=>{for(const c of r.clients)c.res.write(`data: ${JSON.stringify(snap(r,c.pid))}\n\n`);};
 const json=(res,code,o)=>{res.writeHead(code,{'Content-Type':'application/json'});res.end(JSON.stringify(o));};
@@ -39,6 +39,10 @@ module.exports=(req,res,p)=>{
   const m=p.match(/^rooms(?:\/([A-Z]{4})(?:\/(\w+))?)?$/);
   if(!m)return json(res,404,{error:'not found'});
   const[,code,action]=m;
+  if(req.method==='GET'&&!code){ // "Find a table": public rooms that are still waiting for players
+    const list=[];for(const k of [...rooms.keys()]){const r=live(k);if(r&&r.pub&&!r.game&&r.seats.length<8)list.push({code:r.code,host:r.seats[0].name,n:r.seats.length,max:8});}
+    return json(res,200,{rooms:list.slice(0,30)});
+  }
   if(req.method==='GET'&&action==='events'){
     const r=live(code),pid=clean(new URL(req.url,'http://x').searchParams.get('pid'));
     if(!r)return json(res,404,{error:'no such room'});

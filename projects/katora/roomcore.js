@@ -12,7 +12,7 @@
   };
   // what one player is allowed to see of the room (cards are face up; the deck stays hidden)
   const snap=(r,pid)=>({code:r.code,seats:r.seats.map(s=>s.name),started:!!r.game,
-    host:r.seats[0].pid===pid,you:r.seats.findIndex(s=>s.pid===pid),video:r.seats.map(s=>!!s.video),game:r.game&&G.view(r.game)});
+    host:r.seats[0].pid===pid,pub:!!r.pub,you:r.seats.findIndex(s=>s.pid===pid),video:r.seats.map(s=>!!s.video),game:r.game&&G.view(r.game)});
 
   // Apply one action by one player. Throws Error(message) if it is not allowed.
   // Returns "effects" for the caller to deliver:  {snap:true} = everyone gets a fresh snapshot;  {to:'all'|pid, msg} = one small message.
@@ -21,6 +21,7 @@
     const seat=r.seats.findIndex(s=>s.pid===pid),g=r.game;
     if(action==='join'){
       if(seat>=0)return[]; // refresh / rejoin keeps your seat
+      if((r.banned||[]).includes(pid))throw new Error('the host removed you from this table');
       if(g)throw new Error('game already started');
       if(r.seats.length>=8)throw new Error('room is full');
       name=clean(name);if(!name)throw new Error('name required');
@@ -56,6 +57,14 @@
       if(!r.seats[seat].video||!dst.video)throw new Error('both players need video on');
       const msg={signal:{from:seat,data}};if(JSON.stringify(msg).length>16000)throw new Error('signal too large');
       return[{to:dst.pid,msg}];
+    }else if(action==='public'){ // list this table in "Find a table" while it is waiting for players
+      if(seat!==0)throw new Error('only the host can do that');
+      r.pub=!!on;
+    }else if(action==='kick'){ // host removes a player from the waiting room; they cannot rejoin
+      if(seat!==0)throw new Error('only the host can remove players');
+      if(g)throw new Error('cannot remove players during a game');
+      const t=r.seats[to];if(!t||to===0)throw new Error('bad target');
+      (r.banned??=[]).push(t.pid);r.seats.splice(to,1);
     }else if(action==='end'){
       if(seat!==0||!g)throw new Error('only the host can end a started game');
       g.state='over';
